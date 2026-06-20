@@ -2353,4 +2353,362 @@ document.addEventListener('DOMContentLoaded', () => {
       logSpectatorEvent('Broadcast playback speed set to 2x');
     });
   }
+
+  // ==========================================================================
+  // Real-Time AI Coach & Hint Evaluator Logic (Frontend Heuristics)
+  // ==========================================================================
+
+  function evaluateCurrentPosition() {
+    if (!isCoachEnabled || myColor === 'spectator') {
+      clearCoachOverlays();
+      return;
+    }
+    
+    const positionFen = chess.fen();
+    showCoachThinking(true);
+    
+    setTimeout(() => {
+      if (evaluationCache[positionFen]) {
+        displayCoachResults(evaluationCache[positionFen]);
+        showCoachThinking(false);
+        return;
+      }
+      
+      const result = runHeuristicEvaluation(positionFen);
+      evaluationCache[positionFen] = result;
+      displayCoachResults(result);
+      showCoachThinking(false);
+    }, 100);
+  }
+
+  function showCoachThinking(show) {
+    const spinner = document.getElementById('coach-thinking-spinner');
+    const mobSpinner = document.getElementById('mobile-coach-thinking-spinner');
+    if (spinner) {
+      if (show) spinner.classList.remove('d-none');
+      else spinner.classList.add('d-none');
+    }
+    if (mobSpinner) {
+      if (show) mobSpinner.classList.remove('d-none');
+      else mobSpinner.classList.add('d-none');
+    }
+  }
+
+  function runHeuristicEvaluation(fen) {
+    const tempChess = new Chess(fen);
+    const activeColor = tempChess.turn();
+    const legalMoves = tempChess.moves({ verbose: true });
+    
+    if (legalMoves.length === 0) {
+      return {
+        bestMove: null,
+        alternatives: [],
+        winChance: 50,
+        scoredMoves: []
+      };
+    }
+    
+    const scoredMoves = legalMoves.map(move => {
+      tempChess.load(fen);
+      const appliedMove = tempChess.move(move);
+      
+      let score = 0;
+      if (!appliedMove) return { move, score: -9999 };
+      
+      // 1. Checkmate priority
+      if (tempChess.in_checkmate()) {
+        score += 10000;
+      }
+      
+      // 2. Checks
+      if (tempChess.in_check()) {
+        score += 60;
+      }
+      
+      // 3. Captures & Material advantage
+      const pieceValues = { p: 10, n: 30, b: 30, r: 50, q: 90, k: 0 };
+      if (move.captured) {
+        const capturedVal = pieceValues[move.captured] || 0;
+        const attackerVal = pieceValues[move.piece] || 0;
+        score += capturedVal * 1.5;
+        if (attackerVal < capturedVal) {
+          score += (capturedVal - attackerVal) * 2;
+        }
+      }
+      
+      // 4. Center control
+      const centerSquares = ['d4', 'd5', 'e4', 'e5', 'c4', 'c5', 'f4', 'f5'];
+      if (centerSquares.includes(move.to)) {
+        score += 12;
+      }
+      
+      // 5. Piece development
+      if (['n', 'b'].includes(move.piece)) {
+        const isWhite = move.color === 'w';
+        const startingRank = isWhite ? '1' : '8';
+        if (move.from.endsWith(startingRank)) {
+          score += 15;
+        }
+      }
+      
+      // 6. Castling security
+      if (move.flags.includes('k') || move.flags.includes('q')) {
+        score += 40;
+      }
+      
+      // 7. Prevent moving into attack
+      const oppMoves = tempChess.moves({ verbose: true });
+      const isAttacked = oppMoves.some(m => m.to === move.to && m.captured);
+      if (isAttacked) {
+        const pieceVal = pieceValues[move.piece] || 0;
+        score -= pieceVal * 1.2;
+      }
+      
+      return {
+        move,
+        score,
+        san: appliedMove.san
+      };
+    });
+    
+    scoredMoves.sort((a, b) => b.score - a.score);
+    
+    const bestMove = scoredMoves[0];
+    const alternatives = scoredMoves.slice(1, 4).filter(m => m.score > -100);
+    
+    let materialDiff = calculateMaterialDifference(tempChess, activeColor);
+    let winChance = 50 + (materialDiff * 4);
+    if (bestMove && bestMove.score > 20) {
+      winChance += 5;
+    }
+    winChance = Math.max(5, Math.min(95, winChance));
+    
+    return {
+      bestMove,
+      alternatives,
+      winChance: Math.round(winChance),
+      scoredMoves
+    };
+  }
+
+  function calculateMaterialDifference(chessObj, activeColor) {
+    const board = chessObj.board();
+    const pieceValues = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+    let material = 0;
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const p = board[r][c];
+        if (p) {
+          const val = pieceValues[p.type] || 0;
+          if (p.color === activeColor) {
+            material += val;
+          } else {
+            material -= val;
+          }
+        }
+      }
+    }
+    return material;
+  }
+
+  function displayCoachResults(result) {
+    const descContainer = document.getElementById('coach-suggestions-container');
+    const mobContainer = document.getElementById('mobile-coach-suggestions-container');
+    const descProbability = document.getElementById('eval-probability');
+    const mobProbability = document.getElementById('mobile-eval-probability');
+    
+    if (!result.bestMove) {
+      const emptyHtml = `
+        <div class="text-center py-3 text-secondary-50 small">
+          <i class="bi bi-robot fs-3 block mb-2 text-success"></i>
+          <div>No moves available. Match has ended!</div>
+        </div>
+      `;
+      if (descContainer) descContainer.innerHTML = emptyHtml;
+      if (mobContainer) mobContainer.innerHTML = emptyHtml;
+      return;
+    }
+    
+    const bestMoveExplanation = getMoveExplanation(result.bestMove.move);
+    
+    const bestMoveHtml = `
+      <div class="coach-move-pill move-quality-excellent mb-2">
+        <div>
+          <span class="badge bg-success me-2">Best</span>
+          <span class="fw-extrabold text-white fs-5">${result.bestMove.san}</span>
+          <div class="small text-secondary mt-1">${bestMoveExplanation}</div>
+        </div>
+      </div>
+    `;
+    
+    let altsHtml = '';
+    result.alternatives.forEach((alt, idx) => {
+      const qualityClass = idx === 0 ? 'move-quality-good' : 'move-quality-risky';
+      const qualityBadge = idx === 0 ? 'bg-primary' : 'bg-warning text-dark';
+      const qualityName = idx === 0 ? 'Good' : 'Risky';
+      const altExplanation = getMoveExplanation(alt.move);
+      altsHtml += `
+        <div class="coach-move-pill ${qualityClass} mb-2">
+          <div>
+            <span class="badge ${qualityBadge} me-2">${qualityName}</span>
+            <span class="fw-bold text-white-50">${alt.san}</span>
+            <div class="small text-secondary mt-1">${altExplanation}</div>
+          </div>
+        </div>
+      `;
+    });
+    
+    const fullHtml = bestMoveHtml + (altsHtml || '<div class="text-secondary small">No strong alternatives.</div>');
+    
+    if (descContainer) descContainer.innerHTML = fullHtml;
+    if (mobContainer) mobContainer.innerHTML = fullHtml;
+    
+    const myPercentage = result.winChance;
+    const oppPercentage = 100 - myPercentage;
+    const probText = `${myPercentage}% / ${oppPercentage}%`;
+    if (descProbability) descProbability.innerText = probText;
+    if (mobProbability) mobProbability.innerText = probText;
+  }
+
+  function getMoveExplanation(move) {
+    const pieceNames = { p: 'Pawn', n: 'Knight', b: 'Bishop', r: 'Rook', q: 'Queen', k: 'King' };
+    const pieceName = pieceNames[move.piece] || 'Piece';
+    
+    if (move.flags.includes('k') || move.flags.includes('q')) {
+      return 'Secures king safety and connects the rooks.';
+    }
+    if (move.captured) {
+      const capturedPiece = pieceNames[move.captured] || 'piece';
+      return `Captures opponent's ${capturedPiece} on ${move.to}.`;
+    }
+    if (move.flags.includes('p')) {
+      return 'Promotes a passed pawn to an active major piece!';
+    }
+    
+    const centerSquares = ['d4', 'd5', 'e4', 'e5', 'c4', 'c5', 'f4', 'f5'];
+    if (centerSquares.includes(move.to)) {
+      return `Positions the ${pieceName.toLowerCase()} to claim space in the center.`;
+    }
+    
+    const isWhite = move.color === 'w';
+    const startingRank = isWhite ? '1' : '8';
+    if (['n', 'b'].includes(move.piece) && move.from.endsWith(startingRank)) {
+      return `Develops the ${pieceName.toLowerCase()} to activate piece coordination.`;
+    }
+    
+    return `Coordinates the ${pieceName.toLowerCase()} towards ${move.to}.`;
+  }
+
+  function clearCoachOverlays() {
+    const overlay = document.getElementById('arrow-overlay');
+    if (overlay) overlay.querySelectorAll('line').forEach(l => l.remove());
+    document.querySelectorAll('.square').forEach(sqEl => {
+      sqEl.classList.remove('recommended-move-hint');
+    });
+    removeMoveFeedback();
+  }
+
+  function drawCoachArrow(fromSq, toSq) {
+    const overlay = document.getElementById('arrow-overlay');
+    if (!overlay) return;
+    
+    overlay.querySelectorAll('line').forEach(l => l.remove());
+    
+    const fromCoords = getSquareCoords(fromSq);
+    const toCoords = getSquareCoords(toSq);
+    
+    const x1 = fromCoords.x + 50;
+    const y1 = fromCoords.y + 50;
+    const x2 = toCoords.x + 50;
+    const y2 = toCoords.y + 50;
+    
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1);
+    line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2);
+    line.setAttribute('y2', y2);
+    line.setAttribute('stroke', 'gold');
+    line.setAttribute('stroke-width', '12');
+    line.setAttribute('stroke-linecap', 'round');
+    line.setAttribute('opacity', '0.78');
+    line.setAttribute('marker-end', 'url(#arrowhead)');
+    
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const distance = Math.hypot(dx, dy);
+    if (distance > 30) {
+      const offset = 30;
+      const ratio = (distance - offset) / distance;
+      const adjX2 = x1 + dx * ratio;
+      const adjY2 = y1 + dy * ratio;
+      line.setAttribute('x2', adjX2);
+      line.setAttribute('y2', adjY2);
+    }
+    
+    overlay.appendChild(line);
+  }
+
+  function checkMoveQuality(move) {
+    if (!isCoachEnabled) return;
+    const prevFen = chess.fen();
+    const prevEval = evaluationCache[prevFen];
+    if (prevEval && prevEval.scoredMoves) {
+      const bestMove = prevEval.bestMove;
+      const playedMove = prevEval.scoredMoves.find(m => m.move.from === move.from && m.move.to === move.to);
+      
+      if (playedMove) {
+        if (bestMove && playedMove.move.from === bestMove.move.from && playedMove.move.to === bestMove.move.to) {
+          showMoveFeedback('excellent');
+        } else {
+          const index = prevEval.scoredMoves.indexOf(playedMove);
+          if (index > 0 && index < 3) {
+            showMoveFeedback('good');
+          } else {
+            const bestScore = bestMove ? bestMove.score : 0;
+            const playedScore = playedMove.score;
+            if (bestScore - playedScore > 80) {
+              showMoveFeedback('blunder');
+            } else {
+              showMoveFeedback('inaccuracy');
+            }
+          }
+        }
+      }
+    }
+  }
+
+  function showMoveFeedback(quality) {
+    removeMoveFeedback();
+    
+    const boardWrapper = document.querySelector('.chess-board-wrapper');
+    if (!boardWrapper) return;
+    
+    const alert = document.createElement('div');
+    alert.className = `move-feedback-alert feedback-${quality}`;
+    
+    let text = '';
+    if (quality === 'excellent') text = '✔ Excellent move!';
+    else if (quality === 'good') text = 'Good move';
+    else if (quality === 'inaccuracy') text = '⚠ Inaccuracy';
+    else if (quality === 'blunder') text = '❌ Blunder risk detected';
+    
+    alert.innerText = text;
+    boardWrapper.appendChild(alert);
+    
+    setTimeout(() => alert.classList.add('show'), 10);
+    
+    currentFeedbackTimeout = setTimeout(() => {
+      alert.classList.remove('show');
+      setTimeout(() => alert.remove(), 300);
+    }, 1800);
+  }
+
+  function removeMoveFeedback() {
+    if (currentFeedbackTimeout) {
+      clearTimeout(currentFeedbackTimeout);
+      currentFeedbackTimeout = null;
+    }
+    const existing = document.querySelectorAll('.move-feedback-alert');
+    existing.forEach(el => el.remove());
+  }
 });
