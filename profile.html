@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player Profile - Antigravity Chess</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css?v=1.0.4">
+  <!-- Theme Preference Loader (Prevents Flash/Flicker) -->
+  <script>
+    (function() {
+      const theme = localStorage.getItem('chess_theme') || 'dark';
+      if (theme === 'light') {
+        document.documentElement.classList.add('light-theme');
+      }
+      const boardStyle = localStorage.getItem('chess_board_style') || 'emerald';
+      if (boardStyle !== 'emerald') {
+        document.documentElement.classList.add('board-' + boardStyle);
+      }
+    })();
+  </script>
+  <style>
+    /* Premium Profile Design extending custom system styles */
+    body {
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      font-family: 'Outfit', 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .profile-dashboard-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+    }
+
+    /* Left Sidebar Styling */
+    .profile-sidebar {
+      background: rgba(15, 23, 42, 0.45);
+      border-right: 1px solid var(--border-glass);
+      backdrop-filter: blur(15px);
+      padding: 2.5rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 3rem;
+      padding-left: 0.5rem;
+    }
+
+    .sidebar-menu {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      flex-grow: 1;
+    }
+
+    .sidebar-item-btn {
+      width: 100%;
+      border: none;
+      background: transparent;
+      padding: 0.85rem 1.2rem;
+      border-radius: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .sidebar-item-btn i {
+      font-size: 1.25rem;
+    }
+
+    .sidebar-item-btn:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-primary);
+      transform: translateX(3px);
+    }
+
+    .sidebar-item-btn.active {
+      background: var(--btn-accent);
+      color: var(--primary-color);
+      box-shadow: inset 0 0 12px rgba(46, 204, 113, 0.05);
+      border: 1px solid rgba(46, 204, 113, 0.2);
+    }
+
+    /* Main Panel Content */
+    .profile-main-content {
+      padding: 3rem 4rem;
+      overflow-y: auto;
+      max-height: 100vh;
+    }
+
+    .dashboard-section {
+      display: none;
+      animation: fadeIn 0.4s ease-out forwards;
+    }
+
+    .dashboard-section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Glass Cards */
+    .profile-banner-wrapper {
+      position: relative;
+      height: 180px;
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: -5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .profile-banner {
+      width: 100%;
+      height: 100%;
+      background: var(--primary-color);
+      transition: background 0.3s ease;
+    }
+
+    .profile-header-card {
+      padding-top: 6rem;
+      margin-bottom: 2rem;
+    }
+
+    .header-card-content {
+      background: var(--bg-dark-card);
+      border: 1px solid var(--border-glass);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 2rem;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 2rem;
+      box-shadow: var(--glass-shadow);
+    }
+
+    .profile-avatar-container {
+      width: 110px;
+      height: 110px;
+      border-radius: 20px;
+      border: 4px solid var(--bg-dark);
+      background: var(--bg-dark);
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      position: relative;
+      margin-top: -3.5rem;
+    }
+
+    .profile-avatar-container svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .profile-rank-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .bg-bronze { background: linear-gradient(135deg, #a75a28, #733c17); color: #fff; }
+    .bg-silver { background: linear-gradient(135deg, #cbd5e1, #64748b); color: #fff; }
+    .bg-gold { background: linear-gradient(135deg, #eab308, #854d0e); color: #fff; }
+    .bg-platinum { background: linear-gradient(135deg, #38bdf8, #0369a1); color: #fff; }
+    .bg-diamond { background: linear-gradient(135deg, #22d3ee, #0891b2); color: #fff; }
+    .bg-master { background: linear-gradient(135deg, #f43f5e, #be123c); color: #fff; }
+    .bg-gm { background: linear-gradient(135deg, #f59e0b, #b45309); color: #fff; box-shadow: 0 0 15px rgba(245, 158, 11, 0.3); }
+
+    .online-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--primary-color);
+    }
+
+    .online-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
+      70% { box-shadow: 0 0 0 6px rgba(46, 204, 113, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+    }
+
+    /* Rating Cards Grid */
+    .rating-card {
+      background: var(--bg-dark-card);
+      border: 1px solid var(--border-glass);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .rating-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(255,255,255,0.15);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.25);
+    }
+
+    .rating-change-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+    }
+
+    .rating-change-positive { background: rgba(46, 204, 113, 0.15); color: var(--primary-color); }
+    .rating-change-negative { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    .rating-change-zero { background: rgba(255, 255, 255, 0.08); color: var(--text-secondary); }
+
+    /* Custom Selection Grids for customization */
+    .avatar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 1rem;
+    }
+
+    .avatar-selection-card {
+      cursor: pointer;
+      border-radius: 12px;
+      border: 3px solid transparent;
+      overflow: hidden;
+      transition: all 0.2s ease;
+      background: rgba(15, 23, 42, 0.5);
+      aspect-ratio: 1;
+    }
+
+    .avatar-selection-card svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .avatar-selection-card:hover {
+      transform: scale(1.08);
+    }
+
+    .avatar-selection-card.selected {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+
+    .banner-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 1rem;
+    }
+
+    .banner-selection-card {
+      cursor: pointer;
+      border-radius: 12px;
+      border: 3px solid transparent;
+      height: 70px;
+      transition: all 0.2s ease;
+    }
+
+    .banner-selection-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .banner-selection-card.selected {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+
+    /* Achievement Grid Card */
+    .achievement-card {
+      background: var(--bg-dark-card);
+      border: 1px solid var(--border-glass);
+      border-radius: 16px;
+      padding: 1.5rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .achievement-card.locked {
+      filter: grayscale(1) opacity(0.4);
+    }
+
+    .achievement-badge-icon {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      font-size: 2rem;
+      transition: all 0.3s ease;
+    }
+
+    .achievement-card:not(.locked) .achievement-badge-icon {
+      background: var(--btn-accent);
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+      box-shadow: 0 0 15px var(--primary-glow);
+      animation: bounceBadge 0.5s ease-out;
+    }
+
+    @keyframes bounceBadge {
+      0% { transform: scale(0.6); }
+      70% { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+
+    /* History Table Styling */
+    .history-card {
+      background: var(--bg-dark-card);
+      border: 1px solid var(--border-glass);
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+
+    .history-table-container {
+      overflow-x: auto;
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .history-table th {
+      border: none;
+      padding: 0.75rem 1rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .history-row {
+      background: rgba(30, 41, 59, 0.4);
+      transition: background 0.2s ease;
+    }
+
+    .history-row:hover {
+      background: rgba(30, 41, 59, 0.7);
+    }
+
+    .history-row td {
+      padding: 1rem;
+      vertical-align: middle;
+      border-top: 1px solid var(--border-glass);
+      border-bottom: 1px solid var(--border-glass);
+    }
+
+    .history-row td:first-child {
+      border-left: 1px solid var(--border-glass);
+      border-top-left-radius: 12px;
+      border-bottom-left-radius: 12px;
+    }
+
+    .history-row td:last-child {
+      border-right: 1px solid var(--border-glass);
+      border-top-right-radius: 12px;
+      border-bottom-right-radius: 12px;
+    }
+
+    .outcome-pill {
+      display: inline-block;
+      padding: 0.3rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-align: center;
+      min-width: 60px;
+    }
+
+    .outcome-win { background: rgba(46, 204, 113, 0.15); color: var(--primary-color); border: 1px solid rgba(46, 204, 113, 0.2); }
+    .outcome-loss { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+    .outcome-draw { background: rgba(255, 255, 255, 0.08); color: var(--text-secondary); border: 1px solid rgba(255, 255, 255, 0.1); }
+
+    .history-opp-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: var(--bg-dark);
+      overflow: hidden;
+      display: inline-block;
+    }
+
+    .history-opp-avatar svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Mobile view header / tabs */
+    .mobile-tab-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(15, 23, 42, 0.9);
+      border-top: 1px solid var(--border-glass);
+      backdrop-filter: blur(15px);
+      z-index: 1000;
+      padding: 0.5rem 0;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+    }
+
+    .mobile-tab-nav .nav-row {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+
+    .mobile-tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+      padding: 0.4rem 0.8rem;
+      transition: color 0.2s ease;
+    }
+
+    .mobile-tab-btn i {
+      font-size: 1.3rem;
+    }
+
+    .mobile-tab-btn.active {
+      color: var(--primary-color);
+    }
+
+    .mobile-header {
+      display: none;
+      padding: 1rem 1.5rem;
+      background: rgba(15, 23, 42, 0.5);
+      border-bottom: 1px solid var(--border-glass);
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(10px);
+    }
+
+    /* Skeletons */
+    .skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+      border-radius: 6px;
+    }
+
+    @keyframes skeleton-loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Responsive layout settings */
+    @media (max-width: 991px) {
+      .profile-dashboard-layout {
+        grid-template-columns: 1fr;
+        padding-bottom: 70px;
+      }
+      .profile-sidebar {
+        display: none;
+      }
+      .mobile-tab-nav {
+        display: block;
+      }
+      .mobile-header {
+        display: flex;
+      }
+      .profile-main-content {
+        padding: 1.5rem;
+      }
+      .header-card-content {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 1rem;
+      }
+      .profile-avatar-container {
+        margin: -3.5rem auto 0;
+      }
+      .header-card-actions {
+        display: flex;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Mobile Top Bar Header -->
+  <div class="mobile-header">
+    <div class="d-flex align-items-center gap-2">
+      <a href="index.html" class="btn btn-sm btn-glass text-secondary">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <h2 class="h5 mb-0 fw-bold">Player Profile</h2>
+    </div>
+    <button id="mobile-btn-theme" class="btn btn-sm btn-glass px-2.5">
+      <i class="bi bi-sun-fill text-success" id="mobile-theme-icon"></i>
+    </button>
+  </div>
+
+  <div class="profile-dashboard-layout">
+    <!-- Desktop Left Sidebar -->
+    <aside class="profile-sidebar">
+      <div>
+        <div class="sidebar-logo">
+          <svg width="32" height="32" viewBox="0 0 45 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8.5 36h28v-3h-28v3zm3-3h22v-3h-22v3zm11-19.5V8M20 11h5" stroke="#2ecc71" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M11.5 30c2.5-3 5-4.5 11-4.5s8.5 1.5 11 4.5h-22z" fill="#1e293b" stroke="#2ecc71" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+          <span class="fs-5 fw-bold text-white tracking-wide">Antigravity Profile</span>
+        </div>
+        
+        <ul class="sidebar-menu">
+          <li>
+            <button class="sidebar-item-btn active" data-tab="overview">
+              <i class="bi bi-grid-1x2-fill"></i> Overview
+            </button>
+          </li>
+          <li>
+            <button class="sidebar-item-btn" data-tab="statistics">
+              <i class="bi bi-bar-chart-fill"></i> Statistics
+            </button>
+          </li>
+          <li>
+            <button class="sidebar-item-btn" data-tab="history">
+              <i class="bi bi-clock-history"></i> Match History
+            </button>
+          </li>
+          <li>
+            <button class="sidebar-item-btn" data-tab="achievements">
+              <i class="bi bi-award-fill"></i> Achievements
+            </button>
+          </li>
+          <li>
+            <button class="sidebar-item-btn" data-tab="settings">
+              <i class="bi bi-gear-fill"></i> Customize
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <div class="d-grid gap-2">
+        <a href="index.html" class="btn btn-glass py-2.5 small">
+          <i class="bi bi-arrow-left me-1"></i> Back to Lobby
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <main class="profile-main-content">
+      
+      <!-- Profile Header Summary (Loaded dynamically in overview but stays consistent if wanted) -->
+      <div id="profile-header-region">
+        <div class="profile-banner-wrapper">
+          <div class="profile-banner" id="user-banner"></div>
+        </div>
+        <div class="profile-header-card">
+          <div class="header-card-content">
+            <div class="profile-avatar-container" id="user-avatar-svg">
+              <!-- Inline Avatar SVG rendered here -->
+            </div>
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                <h3 class="h4 mb-0 fw-bold" id="user-name">Loading...</h3>
+                <span id="user-country-flag" class="fs-5">🇺🇸</span>
+                <span class="profile-rank-badge bg-gold" id="user-badge">Grandmaster</span>
+              </div>
+              <div class="text-secondary small d-flex gap-3 align-items-center flex-wrap">
+                <span id="user-id">ID: USR-000000</span>
+                <span>•</span>
+                <span id="user-joindate"><i class="bi bi-calendar3 me-1"></i>Joined Jun 2026</span>
+                <span>•</span>
+                <span class="online-indicator"><span class="online-dot"></span>Online</span>
+              </div>
+            </div>
+            <div class="header-card-actions">
+              <button class="btn btn-sm btn-glass text-success py-2 px-3 fw-semibold border-success border-opacity-25" id="btn-quick-play" onclick="window.location.href='index.html'">
+                <i class="bi bi-play-fill me-1"></i> Play Chess
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overview Tab Section -->
+      <section class="dashboard-section active" id="sec-overview">
+        <div class="row g-4 mb-4">
+          <!-- Bullet Rating Card -->
+          <div class="col-sm-6 col-xl-3">
+            <div class="rating-card">
+              <div>
+                <span class="text-secondary small fw-semibold text-uppercase tracking-wider">Bullet</span>
+                <h2 class="display-6 fw-bold my-1" id="bullet-rating">1200</h2>
+                <div class="small text-secondary">Peak: <span class="fw-semibold text-white" id="bullet-peak">1200</span></div>
+              </div>
+              <div class="text-end">
+                <div class="mb-2"><span class="rating-change-badge rating-change-zero" id="bullet-change">0</span></div>
+                <span class="badge bg-silver" id="bullet-badge">Silver</span>
+              </div>
+            </div>
+          </div>
+          <!-- Blitz Rating Card -->
+          <div class="col-sm-6 col-xl-3">
+            <div class="rating-card">
+              <div>
+                <span class="text-secondary small fw-semibold text-uppercase tracking-wider">Blitz</span>
+                <h2 class="display-6 fw-bold my-1" id="blitz-rating">1200</h2>
+                <div class="small text-secondary">Peak: <span class="fw-semibold text-white" id="blitz-peak">1200</span></div>
+              </div>
+              <div class="text-end">
+                <div class="mb-2"><span class="rating-change-badge rating-change-zero" id="blitz-change">0</span></div>
+                <span class="badge bg-silver" id="blitz-badge">Silver</span>
+              </div>
+            </div>
+          </div>
+          <!-- Rapid Rating Card -->
+          <div class="col-sm-6 col-xl-3">
+            <div class="rating-card">
+              <div>
+                <span class="text-secondary small fw-semibold text-uppercase tracking-wider">Rapid</span>
+                <h2 class="display-6 fw-bold my-1" id="rapid-rating">1200</h2>
+                <div class="small text-secondary">Peak: <span class="fw-semibold text-white" id="rapid-peak">1200</span></div>
+              </div>
+              <div class="text-end">
+                <div class="mb-2"><span class="rating-change-badge rating-change-zero" id="rapid-change">0</span></div>
+                <span class="badge bg-silver" id="rapid-badge">Silver</span>
+              </div>
+            </div>
+          </div>
+          <!-- Classical Rating Card -->
+          <div class="col-sm-6 col-xl-3">
+            <div class="rating-card">
+              <div>
+                <span class="text-secondary small fw-semibold text-uppercase tracking-wider">Classical</span>
+                <h2 class="display-6 fw-bold my-1" id="classical-rating">1200</h2>
+                <div class="small text-secondary">Peak: <span class="fw-semibold text-white" id="classical-peak">1200</span></div>
+              </div>
+              <div class="text-end">
+                <div class="mb-2"><span class="rating-change-badge rating-change-zero" id="classical-change">0</span></div>
+                <span class="badge bg-silver" id="classical-badge">Silver</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-4">
+          <!-- Overview Stats Panel -->
+          <div class="col-lg-6">
+            <div class="glass-container p-4 h-100">
+              <h4 class="h5 mb-4 fw-bold"><i class="bi bi-trophy-fill text-success me-2"></i>Career Summary</h4>
+              <div class="row g-3 text-center mb-3">
+                <div class="col-6">
+                  <div class="p-3 bg-dark bg-opacity-25 rounded-3 border border-secondary border-opacity-10">
+                    <div class="text-secondary small fw-semibold">WINS</div>
+                    <h3 class="fw-bold mb-0 text-success" id="summary-wins">0</h3>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="p-3 bg-dark bg-opacity-25 rounded-3 border border-secondary border-opacity-10">
+                    <div class="text-secondary small fw-semibold">LOSSES</div>
+                    <h3 class="fw-bold mb-0 text-danger" id="summary-losses">0</h3>
+                  </div>
+                </div>
+              </div>
+              <div class="mb-4">
+                <div class="d-flex justify-content-between small text-secondary mb-1">
+                  <span>Win Rate</span>
+                  <span id="summary-winrate-text" class="text-white fw-bold">0%</span>
+                </div>
+                <div class="progress" style="height: 10px; background: rgba(255,255,255,0.05);">
+                  <div class="progress-bar bg-success progress-bar-striped" id="summary-winrate-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+              </div>
+              <div class="d-flex justify-content-between small border-top border-secondary border-opacity-10 pt-3 text-secondary">
+                <span>Total Matches: <strong class="text-white" id="summary-matches">0</strong></span>
+                <span>Draws: <strong class="text-white" id="summary-draws">0</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Highlight Achievements Panel -->
+          <div class="col-lg-6">
+            <div class="glass-container p-4 h-100">
+              <h4 class="h5 mb-4 fw-bold"><i class="bi bi-award-fill text-success me-2"></i>Achievements Spotlight</h4>
+              <div class="row g-2 justify-content-center" id="overview-badge-spotlight">
+                <!-- Badges dynamically rendered here -->
+              </div>
+              <div class="text-center mt-3 border-top border-secondary border-opacity-10 pt-3">
+                <button class="btn btn-sm btn-glass text-secondary" onclick="switchTab('achievements')">
+                  View All Achievements <i class="bi bi-arrow-right ms-1"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Statistics Section Tab -->
+      <section class="dashboard-section" id="sec-statistics">
+        <h4 class="h3 mb-4 fw-bold">Player Statistics</h4>
+        
+        <div class="row g-4">
+          <!-- Total matches -->
+          <div class="col-sm-6 col-md-4">
+            <div class="glass-container p-4 text-center">
+              <i class="bi bi-suit-spade-fill text-success mb-2 fs-3"></i>
+              <div class="text-secondary small fw-semibold">TOTAL MATCHES</div>
+              <h2 class="display-5 fw-bold mb-0 text-white count-up" id="stat-matches" data-val="0">0</h2>
+            </div>
+          </div>
+          <!-- Wins -->
+          <div class="col-sm-6 col-md-4">
+            <div class="glass-container p-4 text-center">
+              <i class="bi bi-emoji-smile-fill text-success mb-2 fs-3"></i>
+              <div class="text-secondary small fw-semibold">WINS</div>
+              <h2 class="display-5 fw-bold mb-0 text-success count-up" id="stat-wins" data-val="0">0</h2>
+            </div>
+          </div>
+          <!-- Losses -->
+          <div class="col-sm-6 col-md-4">
+            <div class="glass-container p-4 text-center">
+              <i class="bi bi-emoji-frown-fill text-danger mb-2 fs-3"></i>
+              <div class="text-secondary small fw-semibold">LOSSES</div>
+              <h2 class="display-5 fw-bold mb-0 text-danger count-up" id="stat-losses" data-val="0">0</h2>
+            </div>
+          </div>
+          <!-- Draws -->
+          <div class="col-sm-6 col-md-4">
+            <div class="glass-container p-4 text-center">
+              <i class="bi bi-handshake-fill text-info mb-2 fs-3"></i>
+              <div class="text-secondary small fw-semibold">DRAWS</div>
+              <h2 class="display-5 fw-bold mb-0 text-info count-up" id="stat-draws" data-val="0">0</h2>
+            </div>
+          </div>
+          <!-- Win Streak -->
+          <div class="col-sm-6 col-md-4">
+            <div class="glass-container p-4 text-center">
+              <i class="bi bi-lightning-fill text-warning mb-2 fs-3"></i>
+              <div class="text-secondary small fw-semibold">CURRENT STREAK</div>
+              <h2 class="display-5 fw-bold mb-0 text-warning count-up" id="stat-streak" data-val="0">0</h2>
+            </div>
+          </div>
+          <!-- Best Win Streak -->
+          <div class="col-sm-6 col-md-4">
+            <div class="glass-container p-4 text-center">
+              <i class="bi bi-fire text-warning mb-2 fs-3"></i>
+              <div class="text-secondary small fw-semibold">BEST STREAK</div>
+              <h2 class="display-5 fw-bold mb-0 text-warning count-up" id="stat-beststreak" data-val="0">0</h2>
+            </div>
+          </div>
+          <!-- Playtime -->
+          <div class="col-sm-6 col-md-6">
+            <div class="glass-container p-4 text-center">
+              <i class="bi bi-hourglass-split text-success mb-2 fs-3"></i>
+              <div class="text-secondary small fw-semibold">TOTAL PLAY TIME</div>
+              <h2 class="display-5 fw-bold mb-0 text-white" id="stat-playtime">0h 0m</h2>
+            </div>
+          </div>
+          <!-- Total Moves -->
+          <div class="col-sm-6 col-md-6">
+            <div class="glass-container p-4 text-center">
+              <i class="bi bi-grid-fill text-success mb-2 fs-3"></i>
+              <div class="text-secondary small fw-semibold">TOTAL MOVES PLAYED</div>
+              <h2 class="display-5 fw-bold mb-0 text-white count-up" id="stat-moves" data-val="0">0</h2>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Match History Tab Section -->
+      <section class="dashboard-section" id="sec-history">
+        <h4 class="h3 mb-4 fw-bold">Match History</h4>
+
+        <div class="history-card">
+          <!-- Search & Filter Controls -->
+          <div class="row g-3 mb-4 align-items-center">
+            <div class="col-md-5">
+              <div class="input-group">
+                <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary"><i class="bi bi-search"></i></span>
+                <input type="text" id="history-search" class="form-control bg-dark border-secondary border-opacity-25 text-white" placeholder="Search by opponent name...">
+              </div>
+            </div>
+            <div class="col-md-7">
+              <div class="d-flex justify-content-md-end gap-2 flex-wrap" id="history-filters">
+                <button class="btn btn-sm btn-glass px-3 py-2 active" data-filter="all">All</button>
+                <button class="btn btn-sm btn-glass px-3 py-2 text-success" data-filter="win">Wins</button>
+                <button class="btn btn-sm btn-glass px-3 py-2 text-danger" data-filter="loss">Losses</button>
+                <button class="btn btn-sm btn-glass px-3 py-2 text-info" data-filter="draw">Draws</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table layout -->
+          <div class="history-table-container">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>Opponent</th>
+                  <th>Result</th>
+                  <th>Date</th>
+                  <th>Control</th>
+                  <th>Mode</th>
+                  <th>Rating Change</th>
+                </tr>
+              </thead>
+              <tbody id="history-rows-container">
+                <!-- History records rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+          <!-- Empty history fall-back -->
+          <div id="history-empty-view" class="text-center py-5 d-none">
+            <i class="bi bi-emoji-neutral text-secondary" style="font-size: 3rem;"></i>
+            <h5 class="fw-semibold text-white mt-3">No matches logged</h5>
+            <p class="text-secondary small">Play online or offline matches to build your history log!</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Achievements Tab Section -->
+      <section class="dashboard-section" id="sec-achievements">
+        <h4 class="h3 mb-4 fw-bold">Achievements & Badges</h4>
+        
+        <div class="row g-4" id="achievements-container">
+          <!-- Achievement Cards rendered here -->
+        </div>
+      </section>
+
+      <!-- Customization / Settings Tab Section -->
+      <section class="dashboard-section" id="sec-settings">
+        <h4 class="h3 mb-4 fw-bold">Customize Profile</h4>
+
+        <div class="glass-container p-4 mb-4">
+          <h5 class="fw-bold mb-4"><i class="bi bi-person-bounding-box text-success me-2"></i>User Preferences</h5>
+          <div class="row g-4">
+            <!-- Username & Country Flag selection -->
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="settings-username" class="form-label text-secondary fw-semibold">Username</label>
+                <input type="text" id="settings-username" class="form-control bg-dark border-secondary border-opacity-25 text-white p-2.5" placeholder="GrandmasterPawn" maxlength="15">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="settings-flag" class="form-label text-secondary fw-semibold">Country Flag</label>
+                <select id="settings-flag" class="form-select bg-dark border-secondary border-opacity-25 text-white p-2.5">
+                  <option value="US">🇺🇸 United States</option>
+                  <option value="IN">🇮🇳 India</option>
+                  <option value="GB">🇬🇧 United Kingdom</option>
+                  <option value="CA">🇨🇦 Canada</option>
+                  <option value="DE">🇩🇪 Germany</option>
+                  <option value="FR">🇫🇷 France</option>
+                  <option value="RU">🇷🇺 Russia</option>
+                  <option value="JP">🇯🇵 Japan</option>
+                  <option value="BR">🇧🇷 Brazil</option>
+                  <option value="ES">🇪🇸 Spain</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Custom Avatar Select grid -->
+        <div class="glass-container p-4 mb-4">
+          <h5 class="fw-bold mb-3"><i class="bi bi-image text-success me-2"></i>Select Avatar</h5>
+          <div class="avatar-grid" id="settings-avatar-selector">
+            <!-- 10 Avatars generated here -->
+          </div>
+        </div>
+
+        <!-- Custom Banner Select grid -->
+        <div class="glass-container p-4 mb-4">
+          <h5 class="fw-bold mb-3"><i class="bi bi-card-image text-success me-2"></i>Select Profile Cover Banner</h5>
+          <div class="banner-grid" id="settings-banner-selector">
+            <!-- 6 Banners generated here -->
+          </div>
+        </div>
+
+        <!-- Theme sync controls -->
+        <div class="glass-container p-4 mb-4">
+          <h5 class="fw-bold mb-4"><i class="bi bi-sliders text-success me-2"></i>Chessboard Settings</h5>
+          <div class="row g-4">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="settings-board-theme" class="form-label text-secondary fw-semibold">Board Board Theme</label>
+                <select id="settings-board-theme" class="form-select bg-dark border-secondary border-opacity-25 text-white p-2.5">
+                  <option value="emerald">Emerald (Default)</option>
+                  <option value="wood">Wood</option>
+                  <option value="slate">Slate</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="settings-theme" class="form-label text-secondary fw-semibold">App Display Mode</label>
+                <select id="settings-app-theme" class="form-select bg-dark border-secondary border-opacity-25 text-white p-2.5">
+                  <option value="dark">Dark Theme</option>
+                  <option value="light">Light Theme</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between flex-wrap gap-2 pt-2">
+          <button class="btn btn-glass-primary py-2.5 px-4" id="btn-save-settings">
+            <i class="bi bi-check-circle-fill me-1"></i> Save Customizations
+          </button>
+          <button class="btn btn-outline-danger py-2.5 px-4 border-opacity-25" id="btn-reset-profile">
+            <i class="bi bi-trash3-fill me-1"></i> Reset Profile Stats
+          </button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Mobile Bottom Tab Navigation -->
+  <nav class="mobile-tab-nav">
+    <div class="nav-row">
+      <button class="mobile-tab-btn active" data-tab="overview">
+        <i class="bi bi-grid-1x2-fill"></i>
+        <span>Overview</span>
+      </button>
+      <button class="mobile-tab-btn" data-tab="statistics">
+        <i class="bi bi-bar-chart-fill"></i>
+        <span>Stats</span>
+      </button>
+      <button class="mobile-tab-btn" data-tab="history">
+        <i class="bi bi-clock-history"></i>
+        <span>History</span>
+      </button>
+      <button class="mobile-tab-btn" data-tab="achievements">
+        <i class="bi bi-award-fill"></i>
+        <span>Badges</span>
+      </button>
+      <button class="mobile-tab-btn" data-tab="settings">
+        <i class="bi bi-gear-fill"></i>
+        <span>Customize</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Load Scripts -->
+  <script src="js/chess-profile.js?v=1.0.4"></script>
+  <script>
+    // Profile UI logic
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Initial Render
+      renderProfileUI();
+
+      // Hook tab selectors
+      const tabBtns = document.querySelectorAll('.sidebar-item-btn, .mobile-tab-btn');
+      tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tabId = btn.getAttribute('data-tab');
+          switchTab(tabId);
+        });
+      });
+
+      // Save customization settings
+      document.getElementById('btn-save-settings').addEventListener('click', saveCustomSettings);
+
+      // Reset Profile handler
+      document.getElementById('btn-reset-profile').addEventListener('click', resetProfileData);
+
+      // Theme toggle handlers
+      document.getElementById('mobile-btn-theme').addEventListener('click', toggleTheme);
+
+      // Search & Filters in Match History
+      document.getElementById('history-search').addEventListener('input', filterHistory);
+      const filterBtns = document.querySelectorAll('#history-filters button');
+      filterBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          filterBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          filterHistory();
+        });
+      });
+    });
+
+    let activeTab = 'overview';
+    let selectedAvatar = '';
+    let selectedBanner = '';
+
+    // Switch Tabs
+    function switchTab(tabId) {
+      activeTab = tabId;
+      
+      // Update UI active buttons
+      const tabBtns = document.querySelectorAll('.sidebar-item-btn, .mobile-tab-btn');
+      tabBtns.forEach(btn => {
+        if (btn.getAttribute('data-tab') === tabId) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      // Hide all panels, show the targeted one
+      const sections = document.querySelectorAll('.dashboard-section');
+      sections.forEach(sec => {
+        sec.classList.remove('active');
+      });
+      
+      const targetSec = document.getElementById(`sec-${tabId}`);
+      if (targetSec) targetSec.classList.add('active');
+
+      // Trigger counter animations if moving to stats tab
+      if (tabId === 'statistics') {
+        animateCounters();
+      }
+    }
+
+    // Flag dictionary mapper
+    const FLAGS = {
+      'US': '🇺🇸', 'IN': '🇮🇳', 'GB': '🇬🇧', 'CA': '🇨🇦', 'DE': '🇩🇪',
+      'FR': '🇫🇷', 'RU': '🇷🇺', 'JP': '🇯🇵', 'BR': '🇧🇷', 'ES': '🇪🇸'
+    };
+
+    function renderProfileUI() {
+      const profile = window.ChessProfile.getProfile();
+      
+      // Select selected customize styles
+      selectedAvatar = profile.avatar;
+      selectedBanner = profile.banner;
+
+      // Update basic fields
+      document.getElementById('user-name').innerText = profile.username;
+      document.getElementById('user-id').innerText = `ID: ${profile.playerId}`;
+      document.getElementById('user-joindate').innerHTML = `<i class="bi bi-calendar3 me-1"></i>Joined ${profile.joinDate}`;
+      document.getElementById('user-avatar-svg').innerHTML = window.ChessProfile.AVATARS[profile.avatar];
+      document.getElementById('user-banner').style.background = window.ChessProfile.BANNERS[profile.banner];
+      document.getElementById('user-country-flag').innerText = FLAGS[profile.country] || '🇺🇸';
+
+      // Set input settings value
+      document.getElementById('settings-username').value = profile.username;
+      document.getElementById('settings-flag').value = profile.country;
+      document.getElementById('settings-board-theme').value = localStorage.getItem('chess_board_style') || 'emerald';
+      document.getElementById('settings-app-theme').value = localStorage.getItem('chess_theme') || 'dark';
+
+      // Calculate peak rating to determine user overall division badge
+      const ratings = profile.ratings;
+      let maxRating = Math.max(
+        ratings.bullet.current,
+        ratings.blitz.current,
+        ratings.rapid.current,
+        ratings.classical.current
+      );
+      const mainBadge = window.ChessProfile.getRankBadge(maxRating);
+      const userBadgeEl = document.getElementById('user-badge');
+      userBadgeEl.innerText = mainBadge.name;
+      userBadgeEl.className = `profile-rank-badge ${mainBadge.class}`;
+
+      // Update ratings display cards
+      updateRatingCard('bullet', ratings.bullet);
+      updateRatingCard('blitz', ratings.blitz);
+      updateRatingCard('rapid', ratings.rapid);
+      updateRatingCard('classical', ratings.classical);
+
+      // Overview Stats Summary
+      document.getElementById('summary-wins').innerText = profile.stats.wins;
+      document.getElementById('summary-losses').innerText = profile.stats.losses;
+      document.getElementById('summary-draws').innerText = profile.stats.draws;
+      document.getElementById('summary-matches').innerText = profile.stats.matches;
+      document.getElementById('summary-winrate-text').innerText = `${profile.stats.winRate || 0}%`;
+      document.getElementById('summary-winrate-bar').style.width = `${profile.stats.winRate || 0}%`;
+
+      // Statistics Section Values
+      document.getElementById('stat-matches').setAttribute('data-val', profile.stats.matches);
+      document.getElementById('stat-wins').setAttribute('data-val', profile.stats.wins);
+      document.getElementById('stat-losses').setAttribute('data-val', profile.stats.losses);
+      document.getElementById('stat-draws').setAttribute('data-val', profile.stats.draws);
+      document.getElementById('stat-streak').setAttribute('data-val', profile.stats.winStreak);
+      document.getElementById('stat-beststreak').setAttribute('data-val', profile.stats.bestWinStreak);
+      document.getElementById('stat-moves').setAttribute('data-val', profile.stats.totalMoves);
+
+      // Playtime Formatting
+      const timeInSecs = profile.stats.totalPlayTime || 0;
+      const hours = Math.floor(timeInSecs / 3600);
+      const minutes = Math.floor((timeInSecs % 3600) / 60);
+      document.getElementById('stat-playtime').innerText = `${hours}h ${minutes}m`;
+
+      // Populate Customization Selectors
+      buildAvatarSelector();
+      buildBannerSelector();
+
+      // Populate Achievements List
+      buildAchievementsPanel(profile);
+
+      // Populate Match History List
+      buildMatchHistoryTable(profile.history);
+    }
+
+    // Update individual rating block card
+    function updateRatingCard(key, ratingData) {
+      document.getElementById(`${key}-rating`).innerText = ratingData.current;
+      document.getElementById(`${key}-peak`).innerText = ratingData.peak;
+      
+      const changeEl = document.getElementById(`${key}-change`);
+      if (ratingData.lastChange > 0) {
+        changeEl.innerText = `+${ratingData.lastChange}`;
+        changeEl.className = 'rating-change-badge rating-change-positive';
+      } else if (ratingData.lastChange < 0) {
+        changeEl.innerText = ratingData.lastChange;
+        changeEl.className = 'rating-change-badge rating-change-negative';
+      } else {
+        changeEl.innerText = '0';
+        changeEl.className = 'rating-change-badge rating-change-zero';
+      }
+
+      // Progress bar towards next badge threshold
+      const badge = window.ChessProfile.getRankBadge(ratingData.current);
+      const badgeEl = document.getElementById(`${key}-badge`);
+      badgeEl.innerText = badge.name;
+      badgeEl.className = `badge ${badge.class}`;
+    }
+
+    // Build Custom Avatar selection items grid
+    function buildAvatarSelector() {
+      const container = document.getElementById('settings-avatar-selector');
+      container.innerHTML = '';
+      
+      const avatars = window.ChessProfile.AVATARS;
+      Object.keys(avatars).forEach(key => {
+        const item = document.createElement('div');
+        item.className = `avatar-selection-card ${selectedAvatar === key ? 'selected' : ''}`;
+        item.innerHTML = avatars[key];
+        item.addEventListener('click', () => {
+          document.querySelectorAll('.avatar-selection-card').forEach(c => c.classList.remove('selected'));
+          item.classList.add('selected');
+          selectedAvatar = key;
+          // Apply instant preview to profile header card
+          document.getElementById('user-avatar-svg').innerHTML = avatars[key];
+        });
+        container.appendChild(item);
+      });
+    }
+
+    // Build Custom Cover Banner selection items grid
+    function buildBannerSelector() {
+      const container = document.getElementById('settings-banner-selector');
+      container.innerHTML = '';
+
+      const banners = window.ChessProfile.BANNERS;
+      Object.keys(banners).forEach(key => {
+        const item = document.createElement('div');
+        item.className = `banner-selection-card ${selectedBanner === key ? 'selected' : ''}`;
+        item.style.background = banners[key];
+        item.addEventListener('click', () => {
+          document.querySelectorAll('.banner-selection-card').forEach(c => c.classList.remove('selected'));
+          item.classList.add('selected');
+          selectedBanner = key;
+          // Apply instant preview to profile banner cover
+          document.getElementById('user-banner').style.background = banners[key];
+        });
+        container.appendChild(item);
+      });
+    }
+
+    // Achievement badges list mapping
+    const BADGES = {
+      'first_victory': { name: 'First Victory', desc: 'Unlock your first match win', icon: 'bi-trophy-fill' },
+      'wins_10': { name: 'Pawn Stormer', desc: 'Reach 10 match wins', icon: 'bi-grid-3x3-gap-fill' },
+      'wins_25': { name: 'Tactical Edge', desc: 'Reach 25 match wins', icon: 'bi-fire' },
+      'wins_50': { name: 'Unstoppable Force', desc: 'Reach 50 match wins', icon: 'bi-shield-fill-check' },
+      'wins_100': { name: 'Centurion Master', desc: 'Reach 100 match wins', icon: 'bi-gem' },
+      'win_streak_5': { name: 'Hot Streak', desc: 'Achieve 5 wins in a row', icon: 'bi-lightning-fill' },
+      'win_streak_10': { name: 'Legendary Streak', desc: 'Achieve 10 wins in a row', icon: 'bi-stars' },
+      'chess_master': { name: 'Chess Master', desc: 'Reach 1400 rating threshold', icon: 'bi-award-fill' },
+      'tournament_winner': { name: 'Arena Victor', desc: 'Win an Online/AI match', icon: 'bi-flag-fill' }
+    };
+
+    // Populate Achievements panel tab
+    function buildAchievementsPanel(profile) {
+      const container = document.getElementById('achievements-container');
+      container.innerHTML = '';
+      
+      const spotlightContainer = document.getElementById('overview-badge-spotlight');
+      spotlightContainer.innerHTML = '';
+
+      let spotlightCount = 0;
+
+      Object.keys(BADGES).forEach(key => {
+        const item = BADGES[key];
+        const status = profile.achievements[key] || { unlocked: false, date: null };
+
+        // 1. Build Tab achievement card
+        const col = document.createElement('div');
+        col.className = 'col-sm-6 col-md-4';
+        
+        col.innerHTML = `
+          <div class="achievement-card ${status.unlocked ? '' : 'locked'}">
+            <div class="achievement-badge-icon">
+              <i class="bi ${item.icon}"></i>
+            </div>
+            <div>
+              <h5 class="fw-bold mb-1 small-title text-white">${item.name}</h5>
+              <p class="text-secondary small mb-1">${item.desc}</p>
+              ${status.unlocked ? `<span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 small" style="font-size: 0.7rem;"><i class="bi bi-check2 me-1"></i>Unlocked ${status.date}</span>` : '<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-10 small" style="font-size: 0.7rem;"><i class="bi bi-lock-fill me-1"></i>Locked</span>'}
+            </div>
+          </div>
+        `;
+        container.appendChild(col);
+
+        // 2. Overview spotlight panel (show unlocked first up to 4 items)
+        if (status.unlocked && spotlightCount < 4) {
+          const badgeIcon = document.createElement('div');
+          badgeIcon.className = 'col-3 text-center';
+          badgeIcon.innerHTML = `
+            <div class="p-2 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-circle d-inline-flex justify-content-center align-items-center" style="width: 45px; height: 45px;" title="${item.name}: ${item.desc}">
+              <i class="bi ${item.icon} text-success fs-5"></i>
+            </div>
+            <div class="small text-secondary text-truncate mt-1" style="font-size: 0.65rem;">${item.name}</div>
+          `;
+          spotlightContainer.appendChild(badgeIcon);
+          spotlightCount++;
+        }
+      });
+
+      // Default spotlight filler if none unlocked
+      if (spotlightCount === 0) {
+        spotlightContainer.innerHTML = `
+          <div class="text-center py-3 w-100 text-secondary small">
+            <i class="bi bi-lock-fill me-1"></i> No achievements unlocked yet.
+          </div>
+        `;
+      }
+    }
+
+    // Populate Match History list rows
+    function buildMatchHistoryTable(historyList) {
+      const tbody = document.getElementById('history-rows-container');
+      const emptyView = document.getElementById('history-empty-view');
+      tbody.innerHTML = '';
+
+      if (!historyList || historyList.length === 0) {
+        emptyView.classList.remove('d-none');
+        return;
+      }
+      emptyView.classList.add('d-none');
+
+      historyList.forEach(m => {
+        const row = document.createElement('tr');
+        row.className = 'history-row';
+        
+        let outcomeClass = 'outcome-draw';
+        let outcomeText = 'Draw';
+        if (m.result === 'win') { outcomeClass = 'outcome-win'; outcomeText = 'Win'; }
+        else if (m.result === 'loss') { outcomeClass = 'outcome-loss'; outcomeText = 'Loss'; }
+
+        let changeText = '0';
+        let changeClass = 'text-secondary';
+        if (m.ratingChange > 0) { changeText = `+${m.ratingChange}`; changeClass = 'text-success fw-bold'; }
+        else if (m.ratingChange < 0) { changeText = m.ratingChange; changeClass = 'text-danger fw-bold'; }
+
+        row.innerHTML = `
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="history-opp-avatar">
+                ${window.ChessProfile.AVATARS[m.opponentAvatar] || ''}
+              </div>
+              <span class="fw-semibold text-white">${m.opponentName}</span>
+            </div>
+          </td>
+          <td><span class="outcome-pill ${outcomeClass}">${outcomeText}</span></td>
+          <td class="small text-secondary">${m.date}</td>
+          <td class="small text-white">${m.timeControl}</td>
+          <td class="small text-secondary text-capitalize">${m.mode}</td>
+          <td class="small ${changeClass}">${changeText}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Filter and search Match History rows dynamically
+    function filterHistory() {
+      const query = document.getElementById('history-search').value.toLowerCase().trim();
+      const activeFilterBtn = document.querySelector('#history-filters button.active');
+      const filter = activeFilterBtn ? activeFilterBtn.getAttribute('data-filter') : 'all';
+
+      const profile = window.ChessProfile.getProfile();
+      let filtered = profile.history;
+
+      // Filter by Search Query
+      if (query) {
+        filtered = filtered.filter(m => m.opponentName.toLowerCase().includes(query));
+      }
+
+      // Filter by win/loss status
+      if (filter === 'win') {
+        filtered = filtered.filter(m => m.result === 'win');
+      } else if (filter === 'loss') {
+        filtered = filtered.filter(m => m.result === 'loss');
+      } else if (filter === 'draw') {
+        filtered = filtered.filter(m => m.result === 'draw');
+      }
+
+      buildMatchHistoryTable(filtered);
+    }
+
+    // Save customized profile fields
+    function saveCustomSettings() {
+      const usernameInput = document.getElementById('settings-username');
+      const username = usernameInput.value.trim();
+      if (!username) {
+        alert('Nickname cannot be empty!');
+        usernameInput.focus();
+        return;
+      }
+
+      const profile = window.ChessProfile.getProfile();
+      profile.username = username;
+      profile.country = document.getElementById('settings-flag').value;
+      profile.avatar = selectedAvatar;
+      profile.banner = selectedBanner;
+
+      // Save updated parameters to localStorage
+      window.ChessProfile.saveProfile(profile);
+
+      // Save chessboard elements preferences
+      const boardTheme = document.getElementById('settings-board-theme').value;
+      const appTheme = document.getElementById('settings-app-theme').value;
+
+      localStorage.setItem('chess_board_style', boardTheme);
+      localStorage.setItem('chess_theme', appTheme);
+
+      // Apply changes to document elements immediately
+      document.documentElement.className = ''; // Reset classes
+      if (appTheme === 'light') {
+        document.documentElement.classList.add('light-theme');
+      }
+      if (boardTheme !== 'emerald') {
+        document.documentElement.classList.add('board-' + boardTheme);
+      }
+
+      // Re-render display preview cards
+      renderProfileUI();
+
+      alert('Profile customization saved successfully!');
+      
+      // Automatically redirect to Overview tab
+      switchTab('overview');
+    }
+
+    // Reset profile statistics database
+    function resetProfileData() {
+      if (confirm('Are you sure you want to reset all your player statistics, ratings, achievements and match history? This action is permanent!')) {
+        localStorage.removeItem('chess_player_profile');
+        renderProfileUI();
+        alert('All player profile stats reset.');
+        switchTab('overview');
+      }
+    }
+
+    // Toggle theme button
+    function toggleTheme() {
+      const currentTheme = localStorage.getItem('chess_theme') || 'dark';
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      
+      localStorage.setItem('chess_theme', newTheme);
+      
+      document.documentElement.classList.toggle('light-theme', newTheme === 'light');
+      document.getElementById('mobile-theme-icon').className = newTheme === 'light' ? 'bi bi-moon-fill text-success' : 'bi bi-sun-fill text-success';
+      document.getElementById('settings-app-theme').value = newTheme;
+    }
+
+    // Counter animations for statistics tab
+    function animateCounters() {
+      const counters = document.querySelectorAll('.count-up');
+      counters.forEach(counter => {
+        const val = parseInt(counter.getAttribute('data-val'), 10) || 0;
+        if (val === 0) {
+          counter.innerText = '0';
+          return;
+        }
+        
+        let start = 0;
+        const duration = 800; // ms
+        const stepTime = Math.max(Math.floor(duration / val), 15);
+        
+        const timer = setInterval(() => {
+          start += Math.ceil(val / 40); // Increments faster
+          if (start >= val) {
+            counter.innerText = val;
+            clearInterval(timer);
+          } else {
+            counter.innerText = start;
+          }
+        }, stepTime);
+      });
+    }
+  </script>
+  <!-- Bootstrap JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

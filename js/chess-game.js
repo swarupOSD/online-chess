@@ -47,6 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Local Offline Mode interval timer
   let localTimerInterval = null;
 
+  // Profile System integration tracking
+  let gameStartTimestamp = Date.now();
+  let hasLoggedMatch = false;
+
   // Spectator Broadcast State Variables
   let isLivePaused = false;
   let latestSpectatorState = null;
@@ -418,6 +422,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     socket.on('sync_state', (data) => {
+      gameStartTimestamp = Date.now();
+      hasLoggedMatch = false;
+      
       roomCode = data.roomCode;
       myColor = data.myColor;
       myUsername = data.myUsername;
@@ -801,6 +808,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   } else {
     // 3. STANDALONE OFFLINE MODES
+    gameStartTimestamp = Date.now();
+    hasLoggedMatch = false;
+
     document.getElementById('room-info-header').innerText = 'Game Mode';
     document.getElementById('room-code-container').classList.add('d-none');
     chatForm.classList.add('d-none');
@@ -991,6 +1001,26 @@ document.addEventListener('DOMContentLoaded', () => {
     gameStatusAlert.className = 'badge bg-dark border border-secondary text-secondary py-2 px-3 fw-semibold';
 
     appendSystemMessage(`Game over: ${outcomeReason}`);
+
+    // Profile stats recording integration
+    if (!hasLoggedMatch && myColor !== 'spectator') {
+      hasLoggedMatch = true;
+      const durationSeconds = Math.round((Date.now() - gameStartTimestamp) / 1000);
+      const movesCount = Math.ceil(chess.history().length / 2);
+      
+      let matchOutcome = 'draw';
+      if (winner !== null) {
+        matchOutcome = (winner === myColor) ? 'win' : 'loss';
+      }
+      
+      let actualOpponentName = opponentName;
+      if (mode === 'ai') actualOpponentName = 'Computer AI';
+      else if (mode === 'local') actualOpponentName = 'Local Player';
+
+      if (window.ChessProfile) {
+        window.ChessProfile.recordMatch(mode, timeLimit, actualOpponentName, matchOutcome, movesCount, durationSeconds);
+      }
+    }
   }
 
   // Client-Side Chess AI move generator (heuristic based)

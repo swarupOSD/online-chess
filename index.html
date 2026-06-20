@@ -62,6 +62,25 @@
           <!-- Alert container -->
           <div id="alert-container"></div>
 
+          <!-- Lobby Player Profile Summary Panel -->
+          <div class="glass-container p-3 mb-4 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+              <div id="lobby-profile-avatar" style="width: 45px; height: 45px; border-radius: 10px; overflow: hidden; background: var(--bg-dark); border: 2px solid rgba(255,255,255,0.05); display: flex;">
+                <!-- Loaded Dynamically -->
+              </div>
+              <div>
+                <h6 class="mb-0 fw-bold text-white" id="lobby-profile-name">GrandmasterPawn</h6>
+                <div class="small text-secondary" style="font-size: 0.75rem;">
+                  Rating: <span class="text-success fw-bold" id="lobby-profile-rating">1200</span>
+                  <span id="lobby-profile-badge" class="badge bg-silver ms-1">Silver</span>
+                </div>
+              </div>
+            </div>
+            <a href="profile.html" class="btn btn-sm btn-glass text-success py-2 px-3 fw-semibold border-success border-opacity-25">
+              <i class="bi bi-person-fill me-1"></i> Profile
+            </a>
+          </div>
+
           <!-- Glass Card Lobby Panel -->
           <div class="glass-container p-4 p-sm-5">
             <form id="lobby-form" onsubmit="return false;">
@@ -187,6 +206,7 @@
   </div>
 
   <!-- Custom Scripts -->
+  <script src="js/chess-profile.js?v=1.0.4"></script>
   <script>
     // Game Mode Toggling Logic
     const gameModeInputs = document.querySelectorAll('input[name="game-mode"]');
@@ -242,12 +262,31 @@
       });
     });
 
-    // Load saved name
-    const usernameInput = document.getElementById('username');
-    const savedName = localStorage.getItem('chess_username');
-    if (savedName) {
-      usernameInput.value = savedName;
+    // Load Profile summary in Lobby
+    let profile = { username: 'GrandmasterPawn', avatar: 'pawn-shield', ratings: { blitz: { current: 1200 } } };
+    if (window.ChessProfile) {
+      profile = window.ChessProfile.getProfile();
     }
+
+    const usernameInput = document.getElementById('username');
+    usernameInput.value = profile.username;
+
+    // Update Lobby Profile Display Card
+    document.getElementById('lobby-profile-name').innerText = profile.username;
+    if (window.ChessProfile && window.ChessProfile.AVATARS[profile.avatar]) {
+      document.getElementById('lobby-profile-avatar').innerHTML = window.ChessProfile.AVATARS[profile.avatar];
+    }
+
+    const maxRating = Math.max(
+      profile.ratings.bullet.current,
+      profile.ratings.blitz.current,
+      profile.ratings.rapid.current,
+      profile.ratings.classical.current
+    );
+    document.getElementById('lobby-profile-rating').innerText = maxRating;
+    const badge = window.ChessProfile.getRankBadge(maxRating);
+    document.getElementById('lobby-profile-badge').innerText = badge.name;
+    document.getElementById('lobby-profile-badge').className = badge.class + ' badge ms-1';
 
     // Helper to generate alerts
     function showAlert(message, type = 'danger') {
