@@ -1,0 +1,15 @@
+{
+  "name": "online-chess",
+  "version": "1.0.0",
+  "description": "Multiplayer online chess game with friends using Node.js, Socket.io, HTML, CSS, JS, and Bootstrap",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "chess.js": "^0.10.3",
+    "express": "^4.21.1",
+    "socket.io": "^4.8.1"
+  }
+}
