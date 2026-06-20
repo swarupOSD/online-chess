@@ -917,6 +917,13 @@
 
     function handlePieceClick8(sq) {
       if (step8Completed) return;
+
+      // If Queen is already selected, treat clicking on another piece (e.g. the black pawn) as a capture attempt
+      if (selectedSquare8 && selectedSquare8 !== sq) {
+        handleSquareClick8(sq);
+        return;
+      }
+
       if (pieces8[sq] !== 'wq') return; // Can only select Queen
 
       if (selectedSquare8 === sq) {
