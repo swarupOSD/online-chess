@@ -164,6 +164,7 @@ body {
   border: 6px solid #1e293b;
   position: relative;
   transition: border-color var(--transition-speed) ease;
+  touch-action: none;
 }
 
 /* Board shake check alert */
@@ -238,6 +239,7 @@ body {
   will-change: transform;
   /* Ease-in-out transition curve similar to Lichess */
   transition: transform 0.26s cubic-bezier(0.25, 0.8, 0.25, 1);
+  touch-action: none;
 }
 
 .piece:active {

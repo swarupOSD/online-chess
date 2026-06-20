@@ -1514,6 +1514,22 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
 
+        // Bounding Box Math fallback (crucial for responsive touch tracking on mobile screens)
+        if (!targetSquare) {
+          const boardRect = boardEl.getBoundingClientRect();
+          const colIdx = Math.floor((e.clientX - boardRect.left) / (boardRect.width / 8));
+          const rowIdx = Math.floor((e.clientY - boardRect.top) / (boardRect.height / 8));
+          
+          if (colIdx >= 0 && colIdx < 8 && rowIdx >= 0 && rowIdx < 8) {
+            const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+            if (myColor === 'black') {
+              targetSquare = files[7 - colIdx] + (rowIdx + 1);
+            } else {
+              targetSquare = files[colIdx] + (8 - rowIdx);
+            }
+          }
+        }
+
         if (targetSquare && targetSquare !== dragStartSquare) {
           const moved = handleMoveAttempt(dragStartSquare, targetSquare);
           if (!moved) {
