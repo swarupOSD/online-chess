@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome - Antigravity Chess Portal</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css?v=1.0.4">
+  <!-- Theme Preference Loader (Prevents Flash/Flicker) -->
+  <script>
+    (function() {
+      const theme = localStorage.getItem('chess_theme') || 'dark';
+      if (theme === 'light') {
+        document.documentElement.classList.add('light-theme');
+      }
+    })();
+  </script>
+  <style>
+    body {
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      font-family: 'Outfit', 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Ambient background glows */
+    .bg-glow-1 {
+      position: absolute;
+      top: 15%;
+      left: 10%;
+      width: 300px;
+      height: 300px;
+      background: var(--primary-glow);
+      filter: blur(120px);
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0.5;
+    }
+
+    .bg-glow-2 {
+      position: absolute;
+      bottom: 15%;
+      right: 10%;
+      width: 350px;
+      height: 350px;
+      background: rgba(30, 58, 138, 0.4);
+      filter: blur(140px);
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0.5;
+    }
+
+    .auth-container {
+      width: 100%;
+      max-width: 440px;
+      z-index: 10;
+    }
+
+    .auth-card {
+      background: var(--bg-dark-card);
+      border: 1px solid var(--border-glass);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 2.5rem;
+      box-shadow: var(--glass-shadow);
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .auth-header svg {
+      margin-bottom: 1rem;
+      filter: drop-shadow(0 0 10px var(--primary-glow));
+    }
+
+    .auth-panel {
+      display: none;
+      animation: authFadeIn 0.3s ease-out forwards;
+    }
+
+    .auth-panel.active {
+      display: block;
+    }
+
+    @keyframes authFadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .form-control:focus, .form-select:focus {
+      border-color: var(--primary-color) !important;
+      box-shadow: 0 0 8px var(--primary-glow) !important;
+    }
+
+    .input-group-text-btn {
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+
+    .input-group-text-btn:hover {
+      color: var(--primary-color) !important;
+    }
+
+    .password-strength-meter {
+      height: 4px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 2px;
+      margin-top: 0.5rem;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .password-strength-bar {
+      height: 100%;
+      width: 0;
+      transition: all 0.3s ease;
+    }
+
+    .strength-weak { background-color: #ef4444; width: 33%; }
+    .strength-medium { background-color: #f59e0b; width: 66%; }
+    .strength-strong { background-color: var(--primary-color); width: 100%; }
+
+    /* Glass Loading overlay */
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(10px);
+      border-radius: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .loading-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient Glows -->
+  <div class="bg-glow-1"></div>
+  <div class="bg-glow-2"></div>
+
+  <div class="auth-container">
+    <div class="auth-card position-relative">
+      
+      <!-- Loading Overlay -->
+      <div class="loading-overlay" id="auth-loading">
+        <div class="spinner-border text-success mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+        <span class="fw-semibold text-white tracking-wide" id="loading-text">Authenticating...</span>
+      </div>
+
+      <!-- Auth Header -->
+      <div class="auth-header">
+        <svg width="48" height="48" viewBox="0 0 45 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8.5 36h28v-3h-28v3zm3-3h22v-3h-22v3zm11-19.5V8M20 11h5" stroke="#2ecc71" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M11.5 30c2.5-3 5-4.5 11-4.5s8.5 1.5 11 4.5h-22z" fill="#1e293b" stroke="#2ecc71" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M11.5 30C15 24 17 18 22.5 18S30 24 33.5 30h-22z" fill="#2ecc71" fill-opacity="0.2" stroke="#2ecc71" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <h2 class="h4 mb-1 fw-bold text-white">Antigravity Chess</h2>
+        <p class="text-secondary small mb-0">Join the ultimate strategic battlefield</p>
+      </div>
+
+      <!-- General Notification Area -->
+      <div id="auth-alert-container"></div>
+
+      <!-- PANEL 1: LOGIN -->
+      <div class="auth-panel active" id="panel-login">
+        <form id="form-login" onsubmit="handleLogin(event)">
+          <div class="mb-3">
+            <label class="form-label text-secondary fw-semibold small">Username or Email</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary"><i class="bi bi-person-fill"></i></span>
+              <input type="text" id="login-identifier" class="form-control bg-dark border-secondary border-opacity-25 text-white p-2.5" required placeholder="Enter username or email">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="form-label text-secondary fw-semibold small mb-0">Password</label>
+              <a href="#" class="small text-success text-decoration-none" onclick="togglePanel('forgot')">Forgot?</a>
+            </div>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary"><i class="bi bi-lock-fill"></i></span>
+              <input type="password" id="login-password" class="form-control bg-dark border-secondary border-opacity-25 text-white p-2.5" required placeholder="••••••••">
+              <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary input-group-text-btn" onclick="togglePasswordVisibility('login-password')"><i class="bi bi-eye" id="login-password-eye"></i></span>
+            </div>
+          </div>
+
+          <div class="mb-4 d-flex align-items-center justify-content-between">
+            <div class="form-check">
+              <input class="form-check-input bg-dark border-secondary border-opacity-25" type="checkbox" id="login-remember" checked>
+              <label class="form-check-label text-secondary small" for="login-remember">Remember Me</label>
+            </div>
+          </div>
+
+          <div class="d-grid mb-3">
+            <button type="submit" class="btn btn-glass-primary py-2.5 fw-bold">Sign In</button>
+          </div>
+          
+          <div class="text-center small text-secondary">
+            Don't have an account? <a href="#" class="text-success text-decoration-none fw-semibold" onclick="togglePanel('register')">Register</a>
+          </div>
+        </form>
+      </div>
+
+      <!-- PANEL 2: REGISTER -->
+      <div class="auth-panel" id="panel-register">
+        <form id="form-register" onsubmit="handleRegister(event)">
+          <div class="mb-3">
+            <label class="form-label text-secondary fw-semibold small">Username</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary"><i class="bi bi-person-fill"></i></span>
+              <input type="text" id="reg-username" class="form-control bg-dark border-secondary border-opacity-25 text-white p-2.5" required placeholder="e.g. ChessMaster99" maxlength="15" pattern="^[a-zA-Z0-9_]{3,15}$" title="Username must be 3-15 characters and alphanumeric (underscores allowed).">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label text-secondary fw-semibold small">Email Address</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary"><i class="bi bi-envelope-fill"></i></span>
+              <input type="email" id="reg-email" class="form-control bg-dark border-secondary border-opacity-25 text-white p-2.5" required placeholder="you@example.com">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label text-secondary fw-semibold small">Password</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary"><i class="bi bi-lock-fill"></i></span>
+              <input type="password" id="reg-password" class="form-control bg-dark border-secondary border-opacity-25 text-white p-2.5" required placeholder="Min 6 characters" oninput="checkPasswordStrength()">
+              <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary input-group-text-btn" onclick="togglePasswordVisibility('reg-password')"><i class="bi bi-eye" id="reg-password-eye"></i></span>
+            </div>
+            <div class="password-strength-meter">
+              <div class="password-strength-bar" id="strength-bar"></div>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label text-secondary fw-semibold small">Confirm Password</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary"><i class="bi bi-shield-lock-fill"></i></span>
+              <input type="password" id="reg-confirm-password" class="form-control bg-dark border-secondary border-opacity-25 text-white p-2.5" required placeholder="Confirm Password">
+              <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary input-group-text-btn" onclick="togglePasswordVisibility('reg-confirm-password')"><i class="bi bi-eye" id="reg-confirm-password-eye"></i></span>
+            </div>
+          </div>
+
+          <div class="d-grid mb-3">
+            <button type="submit" class="btn btn-glass-primary py-2.5 fw-bold">Create Account</button>
+          </div>
+          
+          <div class="text-center small text-secondary">
+            Already have an account? <a href="#" class="text-success text-decoration-none fw-semibold" onclick="togglePanel('login')">Sign In</a>
+          </div>
+        </form>
+      </div>
+
+      <!-- PANEL 3: FORGOT PASSWORD -->
+      <div class="auth-panel" id="panel-forgot">
+        <form id="form-forgot" onsubmit="handleForgot(event)">
+          <p class="text-secondary small mb-4">Enter your email address and we'll send you a link to reset your account password.</p>
+          
+          <div class="mb-4">
+            <label class="form-label text-secondary fw-semibold small">Email Address</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary border-opacity-25 text-secondary"><i class="bi bi-envelope-fill"></i></span>
+              <input type="email" id="forgot-email" class="form-control bg-dark border-secondary border-opacity-25 text-white p-2.5" required placeholder="you@example.com">
+            </div>
+          </div>
+
+          <div class="d-grid mb-3">
+            <button type="submit" class="btn btn-glass-primary py-2.5 fw-bold">Send Reset Link</button>
+          </div>
+          
+          <div class="text-center small text-secondary">
+            Back to <a href="#" class="text-success text-decoration-none fw-semibold" onclick="togglePanel('login')">Sign In</a>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Accounts DB simulator using base64 obfuscation for passwords
+    function getAccounts() {
+      const data = localStorage.getItem('chess_accounts');
+      if (!data) return [];
+      try {
+        return JSON.parse(data);
+      } catch(e) {
+        return [];
+      }
+    }
+
+    function saveAccounts(accounts) {
+      localStorage.setItem('chess_accounts', JSON.stringify(accounts));
+    }
+
+    function hashPassword(password) {
+      // Basic client-side obfuscation for simulated security
+      return btoa(password.split('').reverse().join(''));
+    }
+
+    // Toggle panels
+    function togglePanel(panel) {
+      document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('auth-alert-container').innerHTML = ''; // Clear alert
+      
+      if (panel === 'login') {
+        document.getElementById('panel-login').classList.add('active');
+      } else if (panel === 'register') {
+        document.getElementById('panel-register').classList.add('active');
+      } else if (panel === 'forgot') {
+        document.getElementById('panel-forgot').classList.add('active');
+      }
+    }
+
+    // Toggle password visibility
+    function togglePasswordVisibility(fieldId) {
+      const field = document.getElementById(fieldId);
+      const eye = document.getElementById(fieldId + '-eye');
+      if (field.type === 'password') {
+        field.type = 'text';
+        eye.className = 'bi bi-eye-slash';
+      } else {
+        field.type = 'password';
+        eye.className = 'bi bi-eye';
+      }
+    }
+
+    // Password strength indicator
+    function checkPasswordStrength() {
+      const pw = document.getElementById('reg-password').value;
+      const bar = document.getElementById('strength-bar');
+      bar.className = 'password-strength-bar';
+      
+      if (pw.length === 0) {
+        bar.style.width = '0';
+        return;
+      }
+
+      if (pw.length < 6) {
+        bar.classList.add('strength-weak');
+        return;
+      }
+
+      // Strong check: must contain letters, numbers, and symbols/capitals
+      const hasNumbers = /\d/.test(pw);
+      const hasCapitals = /[A-Z]/.test(pw);
+      const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pw);
+
+      if (pw.length >= 8 && hasNumbers && (hasCapitals || hasSpecial)) {
+        bar.classList.add('strength-strong');
+      } else {
+        bar.classList.add('strength-medium');
+      }
+    }
+
+    // Notification builder
+    function showAuthAlert(message, type = 'danger') {
+      const container = document.getElementById('auth-alert-container');
+      container.innerHTML = `
+        <div class="alert alert-${type} border-0 text-white bg-${type} bg-opacity-75 py-2.5 px-3 small rounded-3 mb-3 d-flex align-items-center" role="alert" style="backdrop-filter: blur(5px);">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          <div>${message}</div>
+        </div>
+      `;
+    }
+
+    // Handle Login
+    function handleLogin(e) {
+      e.preventDefault();
+      const identifier = document.getElementById('login-identifier').value.trim();
+      const password = document.getElementById('login-password').value;
+      const remember = document.getElementById('login-remember').checked;
+
+      showLoading(true, 'Signing in...');
+
+      setTimeout(() => {
+        const accounts = getAccounts();
+        const user = accounts.find(a => 
+          a.username.toLowerCase() === identifier.toLowerCase() || 
+          a.email.toLowerCase() === identifier.toLowerCase()
+        );
+
+        if (!user || user.password !== hashPassword(password)) {
+          showLoading(false);
+          showAuthAlert('Invalid username/email or password!');
+          return;
+        }
+
+        // Establish session
+        if (remember) {
+          localStorage.setItem('chess_logged_in_user', user.username);
+        } else {
+          sessionStorage.setItem('chess_logged_in_user', user.username);
+        }
+
+        // Check onboarding tutorial completion state
+        const tutorialDone = localStorage.getItem('chess_tutorial_completed');
+        
+        showLoading(true, 'Login success! Redirecting...');
+        
+        setTimeout(() => {
+          if (!tutorialDone) {
+            window.location.href = 'tutorial.html';
+          } else {
+            // Check for original URL redirect
+            const redirectUrl = localStorage.getItem('chess_auth_redirect');
+            if (redirectUrl) {
+              localStorage.removeItem('chess_auth_redirect');
+              window.location.href = redirectUrl;
+            } else {
+              window.location.href = 'index.html';
+            }
+          }
+        }, 800);
+
+      }, 1200);
+    }
+
+    // Handle Register
+    function handleRegister(e) {
+      e.preventDefault();
+      const username = document.getElementById('reg-username').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const confirmPassword = document.getElementById('reg-confirm-password').value;
+
+      if (password.length < 6) {
+        showAuthAlert('Password must be at least 6 characters!');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        showAuthAlert('Passwords do not match!');
+        return;
+      }
+
+      showLoading(true, 'Creating account...');
+
+      setTimeout(() => {
+        const accounts = getAccounts();
+        
+        // Duplicate check
+        const duplicateUser = accounts.find(a => a.username.toLowerCase() === username.toLowerCase());
+        if (duplicateUser) {
+          showLoading(false);
+          showAuthAlert('Username is already taken!');
+          return;
+        }
+
+        const duplicateEmail = accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
+        if (duplicateEmail) {
+          showLoading(false);
+          showAuthAlert('Email address is already registered!');
+          return;
+        }
+
+        // Register Account
+        const newAccount = {
+          username: username,
+          email: email,
+          password: hashPassword(password)
+        };
+        
+        accounts.push(newAccount);
+        saveAccounts(accounts);
+
+        showLoading(false);
+        showAuthAlert('Registration successful! Please login.', 'success');
+        
+        // Automatically switch to login panel and fill details
+        setTimeout(() => {
+          togglePanel('login');
+          document.getElementById('login-identifier').value = username;
+        }, 1000);
+
+      }, 1200);
+    }
+
+    // Handle Forgot
+    function handleForgot(e) {
+      e.preventDefault();
+      const email = document.getElementById('forgot-email').value.trim();
+      
+      showLoading(true, 'Sending link...');
+      
+      setTimeout(() => {
+        showLoading(false);
+        showAuthAlert(`Password reset link sent to: ${email}`, 'success');
+        document.getElementById('forgot-email').value = '';
+      }, 1200);
+    }
+
+    function showLoading(show, text = 'Loading...') {
+      const overlay = document.getElementById('auth-loading');
+      document.getElementById('loading-text').innerText = text;
+      if (show) {
+        overlay.classList.add('active');
+      } else {
+        overlay.classList.remove('active');
+      }
+    }
+  </script>
+</body>
+</html>

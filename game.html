@@ -14,9 +14,24 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
   <!-- Custom CSS -->
   <link rel="stylesheet" href="css/style.css?v=1.0.4">
-  <!-- Theme Preference Loader (Prevents Flash/Flicker) -->
+  <!-- Theme Preference & Auth Routing Loader -->
   <script>
     (function() {
+      // 1. Session and Onboarding Checks
+      const loggedInUser = localStorage.getItem('chess_logged_in_user') || sessionStorage.getItem('chess_logged_in_user');
+      const tutorialDone = localStorage.getItem('chess_tutorial_completed');
+      
+      if (!loggedInUser) {
+        localStorage.setItem('chess_auth_redirect', window.location.href);
+        window.location.href = 'auth.html';
+        return;
+      } else if (!tutorialDone) {
+        localStorage.setItem('chess_auth_redirect', window.location.href);
+        window.location.href = 'tutorial.html';
+        return;
+      }
+
+      // 2. Load Visual Preferences
       const theme = localStorage.getItem('chess_theme') || 'dark';
       if (theme === 'light') {
         document.documentElement.classList.add('light-theme');
