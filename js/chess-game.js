@@ -19,7 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Core Game State Variables
   let socket = null;
   if (mode === 'online') {
-    socket = io();
+    const socketUrl = window.location.hostname.includes('github.io') 
+      ? 'https://arena-chess.onrender.com' 
+      : undefined;
+    socket = io(socketUrl);
   }
 
   let chess = new Chess();
