@@ -548,6 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.on('invalid_move', (data) => {
       isProcessingMove = false; 
       alert(data.error || 'Invalid action request.');
+      reconcileBoardElements();
 
       if (data.error && (data.error.includes('not found') || data.error.includes('finished'))) {
         window.location.href = `index.html?error=${encodeURIComponent(data.error)}`;
@@ -1514,7 +1515,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (targetSquare && targetSquare !== dragStartSquare) {
-          handleMoveAttempt(dragStartSquare, targetSquare);
+          const moved = handleMoveAttempt(dragStartSquare, targetSquare);
+          if (!moved) {
+            // Snap back if the move was invalid/illegal
+            const { x, y } = getSquareCoords(dragStartSquare);
+            pieceEl.style.transform = `translate(${x}%, ${y}%)`;
+          }
         } else {
           // Snap back
           const { x, y } = getSquareCoords(dragStartSquare);
@@ -1653,7 +1659,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Executes local move attempts
   function handleMoveAttempt(fromSquare, toSquare) {
-    if (isProcessingMove) return;
+    if (isProcessingMove) return false;
 
     const legalMove = validMovesForSelected.find(m => m.from === fromSquare && m.to === toSquare);
     
@@ -1661,7 +1667,7 @@ document.addEventListener('DOMContentLoaded', () => {
       selectedSquare = null;
       validMovesForSelected = [];
       renderBoardHighlightDots();
-      return;
+      return false;
     }
 
     const isPawn = legalMove.piece === 'p';
@@ -1678,6 +1684,7 @@ document.addEventListener('DOMContentLoaded', () => {
         executeLocalMove(fromSquare, toSquare);
       }
     }
+    return true;
   }
 
   function openPromotionSelector() {
