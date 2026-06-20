@@ -215,10 +215,10 @@ io.on('connection', (socket) => {
     let reconnecting = false;
     let assignedColor = null;
 
-    if (room.players.white && room.players.white.name === username && !room.players.white.connected) {
+    if (room.players.white && room.players.white.name === username) {
       reconnecting = true;
       assignedColor = 'white';
-    } else if (room.players.black && room.players.black.name === username && !room.players.black.connected) {
+    } else if (room.players.black && room.players.black.name === username) {
       reconnecting = true;
       assignedColor = 'black';
     }
@@ -732,7 +732,7 @@ io.on('connection', (socket) => {
     }
 
     const player = room.players[userColor];
-    if (player) {
+    if (player && player.socketId === socket.id) {
       player.connected = false;
       player.lastActive = Date.now();
 

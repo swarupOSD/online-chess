@@ -3,11 +3,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Parse URL Parameters
   const urlParams = new URLSearchParams(window.location.search);
   const mode = urlParams.get('mode') || 'online'; // 'online', 'ai', 'local'
-  const action = urlParams.get('action');
+  let action = urlParams.get('action');
   const paramName = urlParams.get('name') || 'Player';
   const paramColor = urlParams.get('color') || 'white';
   const paramTime = urlParams.get('time') || '600';
-  const paramRoom = urlParams.get('room');
+  let paramRoom = urlParams.get('room');
 
   // Preferences & Sound Configurations (localStorage persistence)
   let currentTheme = localStorage.getItem('chess_theme') || 'dark';
@@ -437,6 +437,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const newUrl = `${window.location.origin}${window.location.pathname}?mode=online&action=join&room=${roomCode}`;
       window.history.replaceState({ path: newUrl }, '', newUrl);
+
+      // Update parameter states to prevent "create" loop on socket reconnection
+      action = 'join';
+      paramRoom = roomCode;
 
       chess = new Chess();
       chess.load(data.fen);
