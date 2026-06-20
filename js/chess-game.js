@@ -1391,6 +1391,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     renderBoardHighlightDots();
+    updatePiecePlayability();
+  }
+
+  // Dynamically toggles CSS playability highlighting on pieces based on current turn
+  function updatePiecePlayability() {
+    document.querySelectorAll('.piece').forEach(pieceEl => {
+      const squareName = pieceEl.getAttribute('data-square');
+      if (!squareName) return;
+      const piece = chess.get(squareName);
+      if (!piece) return;
+      
+      const isPieceMyColor = (piece.color === 'w' && myColor === 'white') || (piece.color === 'b' && myColor === 'black');
+      const isPieceTurnColor = piece.color === chess.turn();
+      const isDraggable = (mode === 'local') ? isPieceTurnColor : (isPieceMyColor && isMyTurn);
+      
+      if (isDraggable && myColor !== 'spectator') {
+        pieceEl.classList.add('playable');
+      } else {
+        pieceEl.classList.remove('playable');
+      }
+    });
   }
 
   // Instantiates piece DOM nodes and attaches drag and click listeners
@@ -1404,106 +1425,119 @@ document.addEventListener('DOMContentLoaded', () => {
     const { x, y } = getSquareCoords(squareName);
     pieceEl.style.transform = `translate(${x}%, ${y}%)`;
 
-    const piece = chess.get(squareName);
-    const isPieceMyColor = (piece.color === 'w' && myColor === 'white') || (piece.color === 'b' && myColor === 'black');
-    const isPieceTurnColor = piece.color === chess.turn();
-    const isPieceDraggable = (mode === 'local') ? isPieceTurnColor : (isPieceMyColor && isMyTurn);
+    // Pointer down handler using dynamic DOM data-square to avoid closures binding to creation square coordinates
+    pieceEl.addEventListener('pointerdown', (e) => {
+      if (isProcessingMove) return;
 
-    if (isPieceDraggable && myColor !== 'spectator') {
-      pieceEl.classList.add('playable');
-      pieceEl.addEventListener('pointerdown', (e) => {
-        if (isProcessingMove) return;
-        
-        soundEngine.init();
-        if (soundEngine.audioCtx && soundEngine.audioCtx.state === 'suspended') {
-          soundEngine.audioCtx.resume();
+      const currentSq = pieceEl.getAttribute('data-square');
+      const piece = chess.get(currentSq);
+      if (!piece) return;
+
+      const isPieceMyColor = (piece.color === 'w' && myColor === 'white') || (piece.color === 'b' && myColor === 'black');
+      const isPieceTurnColor = piece.color === chess.turn();
+      const isPieceDraggable = (mode === 'local') ? isPieceTurnColor : (isPieceMyColor && isMyTurn);
+
+      if (!isPieceDraggable || myColor === 'spectator') return;
+      
+      soundEngine.init();
+      if (soundEngine.audioCtx && soundEngine.audioCtx.state === 'suspended') {
+        soundEngine.audioCtx.resume();
+      }
+
+      e.preventDefault();
+      
+      activeDragPiece = pieceEl;
+      dragStartSquare = currentSq;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      dragPointerId = e.pointerId;
+      hasDraggedPastThreshold = false;
+      wasDragging = false;
+
+      const { x: basePctX, y: basePctY } = getSquareCoords(currentSq);
+      initialXPercent = basePctX;
+      initialYPercent = basePctY;
+
+      pieceEl.setPointerCapture(e.pointerId);
+      pieceEl.classList.add('dragging');
+      pieceEl.style.transition = 'none';
+      pieceEl.style.zIndex = '1000';
+    });
+
+    pieceEl.addEventListener('pointermove', (e) => {
+      if (activeDragPiece !== pieceEl || dragPointerId !== e.pointerId) return;
+      e.preventDefault();
+      const dx = e.clientX - dragStartX;
+      const dy = e.clientY - dragStartY;
+
+      if (!hasDraggedPastThreshold) {
+        if (Math.hypot(dx, dy) > 8) {
+          hasDraggedPastThreshold = true;
+          wasDragging = true;
+          selectedSquare = dragStartSquare;
+          validMovesForSelected = chess.moves({ square: dragStartSquare, verbose: true });
+          renderBoardHighlightDots();
         }
+      }
 
-        e.preventDefault();
-        
-        activeDragPiece = pieceEl;
-        dragStartSquare = squareName;
-        dragStartX = e.clientX;
-        dragStartY = e.clientY;
-        dragPointerId = e.pointerId;
-        hasDraggedPastThreshold = false;
-        wasDragging = false;
+      if (hasDraggedPastThreshold) {
+        pieceEl.style.transform = `translate(${initialXPercent}%, ${initialYPercent}%) translate3d(${dx}px, ${dy}px, 0)`;
+      }
+    });
 
-        const { x: basePctX, y: basePctY } = getSquareCoords(squareName);
-        initialXPercent = basePctX;
-        initialYPercent = basePctY;
+    pieceEl.addEventListener('pointerup', (e) => {
+      if (activeDragPiece !== pieceEl || dragPointerId !== e.pointerId) return;
 
-        pieceEl.setPointerCapture(e.pointerId);
-        pieceEl.classList.add('dragging');
-        pieceEl.style.transition = 'none';
-        pieceEl.style.zIndex = '1000';
-      });
+      activeDragPiece = null;
+      dragPointerId = null;
+      pieceEl.releasePointerCapture(e.pointerId);
+      pieceEl.classList.remove('dragging');
+      pieceEl.style.zIndex = '';
+      pieceEl.style.transition = '';
 
-      pieceEl.addEventListener('pointermove', (e) => {
-        if (activeDragPiece !== pieceEl || dragPointerId !== e.pointerId) return;
-        e.preventDefault();
-        const dx = e.clientX - dragStartX;
-        const dy = e.clientY - dragStartY;
+      if (hasDraggedPastThreshold) {
+        pieceEl.style.pointerEvents = 'none';
+        const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
+        pieceEl.style.pointerEvents = '';
 
-        if (!hasDraggedPastThreshold) {
-          if (Math.hypot(dx, dy) > 8) {
-            hasDraggedPastThreshold = true;
-            wasDragging = true;
-            selectedSquare = dragStartSquare;
-            validMovesForSelected = chess.moves({ square: dragStartSquare, verbose: true });
-            renderBoardHighlightDots();
-          }
-        }
-
-        if (hasDraggedPastThreshold) {
-          pieceEl.style.transform = `translate(${initialXPercent}%, ${initialYPercent}%) translate3d(${dx}px, ${dy}px, 0)`;
-        }
-      });
-
-      pieceEl.addEventListener('pointerup', (e) => {
-        if (activeDragPiece !== pieceEl || dragPointerId !== e.pointerId) return;
-
-        activeDragPiece = null;
-        dragPointerId = null;
-        pieceEl.releasePointerCapture(e.pointerId);
-        pieceEl.classList.remove('dragging');
-        pieceEl.style.zIndex = '';
-        pieceEl.style.transition = '';
-
-        if (hasDraggedPastThreshold) {
-          pieceEl.style.pointerEvents = 'none';
-          const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
-          pieceEl.style.pointerEvents = '';
-
-          const squareEl = dropTarget ? dropTarget.closest('.square') : null;
-          const targetSquare = squareEl ? squareEl.getAttribute('data-square') : null;
-
-          if (targetSquare && targetSquare !== dragStartSquare) {
-            handleMoveAttempt(dragStartSquare, targetSquare);
+        let targetSquare = null;
+        if (dropTarget) {
+          const squareEl = dropTarget.closest('.square');
+          if (squareEl) {
+            targetSquare = squareEl.getAttribute('data-square');
           } else {
-            // Snap back
-            const { x, y } = getSquareCoords(dragStartSquare);
-            pieceEl.style.transform = `translate(${x}%, ${y}%)`;
+            const otherPieceEl = dropTarget.closest('.piece');
+            if (otherPieceEl) {
+              targetSquare = otherPieceEl.getAttribute('data-square');
+            }
           }
         }
-        dragStartSquare = null;
-      });
 
-      pieceEl.addEventListener('pointercancel', (e) => {
-        if (activeDragPiece !== pieceEl) return;
-        activeDragPiece = null;
-        dragPointerId = null;
-        pieceEl.releasePointerCapture(e.pointerId);
-        pieceEl.classList.remove('dragging');
-        pieceEl.style.zIndex = '';
-        pieceEl.style.transition = '';
-        const { x, y } = getSquareCoords(dragStartSquare);
-        pieceEl.style.transform = `translate(${x}%, ${y}%)`;
-        dragStartSquare = null;
-      });
-    }
+        if (targetSquare && targetSquare !== dragStartSquare) {
+          handleMoveAttempt(dragStartSquare, targetSquare);
+        } else {
+          // Snap back
+          const { x, y } = getSquareCoords(dragStartSquare);
+          pieceEl.style.transform = `translate(${x}%, ${y}%)`;
+        }
+      }
+      dragStartSquare = null;
+    });
 
-    // Click handler (Click-to-select pieces / tap-to-move fallback)
+    pieceEl.addEventListener('pointercancel', (e) => {
+      if (activeDragPiece !== pieceEl) return;
+      activeDragPiece = null;
+      dragPointerId = null;
+      pieceEl.releasePointerCapture(e.pointerId);
+      pieceEl.classList.remove('dragging');
+      pieceEl.style.zIndex = '';
+      pieceEl.style.transition = '';
+      const { x, y } = getSquareCoords(dragStartSquare);
+      pieceEl.style.transform = `translate(${x}%, ${y}%)`;
+      dragStartSquare = null;
+    });
+
+    // Click handler (Click-to-select pieces / tap-to-move fallback) using dynamic square name
     pieceEl.addEventListener('click', (e) => {
       e.stopPropagation();
       if (wasDragging) {
@@ -1512,19 +1546,23 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (myColor === 'spectator' || !isMyTurn || isProcessingMove) return;
       
-      const isTurnPiece = piece && piece.color === chess.turn();
-      const isPlayablePiece = (mode === 'local') ? isTurnPiece : (piece && ((piece.color === 'w' && myColor === 'white') || (piece.color === 'b' && myColor === 'black')));
+      const currentSq = pieceEl.getAttribute('data-square');
+      const currentPiece = chess.get(currentSq);
+      if (!currentPiece) return;
+      
+      const isTurnPiece = currentPiece.color === chess.turn();
+      const isPlayablePiece = (mode === 'local') ? isTurnPiece : ((currentPiece.color === 'w' && myColor === 'white') || (currentPiece.color === 'b' && myColor === 'black'));
 
-      if (selectedSquare === squareName) {
+      if (selectedSquare === currentSq) {
         selectedSquare = null;
         validMovesForSelected = [];
         renderBoardHighlightDots();
       } else if (isPlayablePiece) {
-        selectedSquare = squareName;
-        validMovesForSelected = chess.moves({ square: squareName, verbose: true });
+        selectedSquare = currentSq;
+        validMovesForSelected = chess.moves({ square: currentSq, verbose: true });
         renderBoardHighlightDots();
       } else if (selectedSquare) {
-        handleMoveAttempt(selectedSquare, squareName);
+        handleMoveAttempt(selectedSquare, currentSq);
       }
     });
 
@@ -1558,6 +1596,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     }
+    updatePiecePlayability();
   }
 
   function renderBoardHighlightDots() {
